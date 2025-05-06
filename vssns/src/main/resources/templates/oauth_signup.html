@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>소셜 회원가입</title></head>
+<body>
+<h1>소셜 로그인 추가 정보 입력</h1>
+<form method="post" action="/auth/oauth/signup" th:object="${oauthSignupDto}">
+    <input type="hidden" th:field="*{email}" />
+    <input type="hidden" th:field="*{provider}" />
+    <input type="hidden" th:field="*{providerId}" />
+
+    <label>이름: <input type="text" th:field="*{username}" /></label><br/>
+    <label>닉네임: <input type="text" th:field="*{nickname}" /></label><br/>
+    <label>전화번호: <input type="text" th:field="*{phoneNumber}" /></label><br/>
+    <button type="submit">가입</button>
+</form>
+</body>
+</html>

@@ -1,16 +1,18 @@
 package com.kdw.sns.auth.controller;
 
-import com.kdw.sns.auth.dto.SignupDto;
+import com.kdw.sns.auth.dto.request.OAuthSignupDto;
+import com.kdw.sns.auth.dto.request.SignupDto;
 import com.kdw.sns.member.entity.Member;
+import com.kdw.sns.member.entity.type.Role;
 import com.kdw.sns.member.repository.MemberRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -26,7 +28,7 @@ public class AuthController {
      * - 비밀번호 암호화 후 저장
      */
     @PostMapping("/signup")
-    public ResponseEntity<?> register(@RequestBody SignupDto signupDto) {
+    public ResponseEntity<?> register(@RequestBody @Valid SignupDto signupDto) {
 
         // 이메일 중복 체크
         if (memberRepository.existsByEmail(signupDto.getEmail())) {
@@ -39,5 +41,23 @@ public class AuthController {
         memberRepository.save(member);
 
         return ResponseEntity.status(HttpStatus.CREATED).body("회원가입 성공");
+    }
+
+    @PostMapping("/oauth/signup")
+    public ResponseEntity<?> oauthSignup(@ModelAttribute @Valid OAuthSignupDto dto, BindingResult bindingResult, Model model) {
+
+
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body("입력값 오류가 있습니다.");
+        }
+
+        if (memberRepository.existsByEmail(dto.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 가입된 이메일입니다.");
+        }
+
+        Member member = Member.createMemberFromOAuth(dto);
+        memberRepository.save(member);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("소셜 회원가입이 완료되었습니다 ✅");
     }
 }

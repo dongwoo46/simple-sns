@@ -20,4 +20,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * - 로그인 시 UserDetailsService에서 사용자 불러올 때 사용
      */
     Optional<Member> findByEmail(String email);
+
+    Optional<Member> findByMembername(String membername);
+
 }

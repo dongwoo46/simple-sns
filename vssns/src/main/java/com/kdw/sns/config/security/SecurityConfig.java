@@ -2,6 +2,8 @@ package com.kdw.sns.config.security;
 
 
 import com.kdw.sns.auth.repository.RefreshTokenRepository;
+import com.kdw.sns.config.oauth2.CustomOAuth2UserService;
+import com.kdw.sns.config.oauth2.CustomSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomSuccessHandler customSuccessHandler;
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtTokenProvider jwtTokenProvider; // ✅ JWT 토큰 생성 및 검증 유틸
     private final RefreshTokenRepository refreshTokenRepository; // ✅ RefreshToken 저장소 (JPA or Redis)
@@ -70,9 +74,21 @@ public class SecurityConfig {
         http.formLogin(form -> form.disable());
         http.httpBasic(basic -> basic.disable());
 
+        //oauth2
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/oauth/login") // 👈 사용자가 직접 가는 로그인 페이지
+                .successHandler(customSuccessHandler)
+                .userInfoEndpoint(userInfo -> userInfo
+                        .userService(customOAuth2UserService)
+                )
+                .redirectionEndpoint(redir -> redir
+                        .baseUri("/auth/login/oauth2/code/*") // 👈 리디렉션 받을 URI
+                )
+        );
+
         // ✅ 인가 정책 설정
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/auth/signup","/auth/login","/auth/logout", "/reissue").permitAll() // 🔥 이게 가장 깔끔
+                .requestMatchers("/", "/login", "/signup", "/oauth/**", "/auth/**").permitAll()
                 .requestMatchers("/admin").hasRole("ADMIN")
                 .anyRequest().authenticated()
         );
@@ -81,8 +97,6 @@ public class SecurityConfig {
         http.sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
-
-        // ✅ 필터 등록 순서 (중요)
 
         // 1️⃣ 로그인 요청 처리 - /login 요청 시 아이디/비번 검증 후 Access/Refresh Token 발급
         http.addFilterAt(
